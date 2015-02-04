@@ -1,0 +1,2 @@
+  RewriteEngine On
+  RewriteRule ^(.*)$ http://lakka.n.kapsi.fi:<port>/$1 [P]

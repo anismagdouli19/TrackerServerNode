@@ -1,0 +1,8 @@
+var config = {
+  dbHost     : '',
+  dbUser     : '',
+  dbName     : '',
+  dbPassword : ''
+};
+
+module.exports.config = config;

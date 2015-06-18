@@ -1,2 +1,4 @@
 nodejs/*
 data
+node_modules
+src/config.js

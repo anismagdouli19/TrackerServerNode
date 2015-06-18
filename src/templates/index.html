@@ -1,5 +1,193 @@
-{% extends 'base.html'%}
 
-{% block body %}
-<h1>{{ name }}</h1>
-{%endblock%}
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>My Webpage</title>
+
+        <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css" />
+        <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+        <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+        <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/json2/20140204/json2.min.js"></script>
+        <script src="/Leaflet.ContinuousZoom.js"></script>
+        <style>
+          html, body, {
+          }
+          #map { height: 600px; }
+          .sidebar{ padding-top: 10px;}
+        </style>
+        <script charset="utf-8">
+          deviceData = [];
+          latLons = [];
+          {% for row in data %}
+            deviceData.push({lat: {{row.lat}}, lon:{{row.lon}},speed:{{row.speed}},created:'{{row.created}}'});
+            latLons.push({lat: {{row.lat}},lng:{{row.lon}}});
+          {% endfor %}
+        </script>
+    </head>
+    <body>
+      <div class="container-fluid">
+        <div class="row-fluid">
+          <div class="col-md-3 sidebar" >
+            <div class="row-fluid">
+              <div class="col-md-12">
+                <input type="text" disabled="disabled" id="imei" value="027042699595">
+                <!--<button id="clearPath">Clear Path</button>-->
+              </div>
+            </div>
+            <div class="row-fluid" >
+              <div class="col-md-12" id="debug" >
+              </div>
+              <div class="alert alert-warning alert-dismissible" role="alert" id="alert" style="display:none;">
+                <strong>saved</strong>
+              </div>
+              <div class="alert alert-warning alert-dismissible" role="alert" id="remove-alert" style="display:none;">
+                <strong>removed</strong>
+              </div>
+            </div>
+            <div class="row-fluid" >
+              <div class="col-md-12" id="pathPoints" >
+              </div>
+              <div class="row-fluid pathPointHolder">
+                <div class="col-md-12 inner">
+                  <a href="#point" class="point-click">{{imei}}</a>
+                  @{{last.created|date('Y/m/d  H:i:s')}}
+                <!--  <table>
+                    {% for row in data %}
+                    <tr>
+                      <td>
+                        {{row.lat}}
+                      </td>
+                      <td>
+                        {{row.lon}}
+                      </td>
+                    </tr>
+                    {% endfor %}
+
+
+
+                  </table>-->
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-9" id="map"></div>
+        </div>
+        <div class="row-fluid">
+
+        </div>
+      </div>
+
+
+        <script>
+
+
+        imei = $("input#imei").val();
+        var map = new L.Map('map', {
+          minZoom: 14,
+          zooms:[14,15,16,17,18]
+        });
+
+        var peruskartta = new L.TileLayer('http://{s}.kartat.kapsi.fi/peruskartta/{z}/{x}/{y}.png', {
+          attribution: 'Kartta: Maanmittauslaitos',
+          nativeZooms: [15,16,17],
+          minZoom: 14,
+          subdomains: ['tile1', 'tile2']
+        });
+        L.control.scale().addTo(map);
+        var center = new L.LatLng(66.62730004410513, 25.860389471054077)
+        if(deviceData.length > 0){
+           center = new L.LatLng(
+             deviceData[deviceData.length - 1].lat,
+             deviceData[deviceData.length - 1].lon
+           )
+        }
+
+        map.setView(center, 16).addLayer(peruskartta);
+        map.on('zoomend', function() { document.getElementById('debug').innerHTML = map.getZoom(); });
+        // create a red polyline from an array of LatLng points
+        var polyline = L.polyline(latLons, {color: 'blue',
+                                            opacity:1.0,
+                                            fillOpacity: 1.0,
+                                            weight: 3}).addTo(map);
+       //drawPoints();
+
+        map.on('click', function(e) {
+            savePoints(e.latlng, function(){
+              polyline.addLatLng( e.latlng );
+              deviceData.push(e.latlng);
+            });
+        });
+
+        function drawPoints(){
+          var container = $("#pathPoints").html("");
+          for(var i=0, len = deviceData.length; i<len;i++){
+            var elem = $(".pathPointHolder").clone();
+            elem.attr("class", "point"+i);
+            container.append(elem);
+            var link = elem.children("div").children("a").attr("id", "point_"+i).html(deviceData[i].lat +" "+ deviceData[i].lon);
+            $("#point_"+i).data("lat",deviceData[i].lat );
+            $("#point_"+i).data("lon",deviceData[i].lon );
+          }
+        }
+
+        function clearPoints(){
+          polyline.setLatLngs( [] );
+          deviceData = [];
+          drawPoints();
+        }
+
+        function savePoints(latlng, callback)
+        {
+          //var data = polyline.getLatLngs();
+          $.post(
+            imei+"/save-point",
+            { lat: latlng.lat,
+              lon:latlng.lng},
+            function( data ) {
+              callback();
+              $("#alert").show();
+              setTimeout(function(){
+                $("#alert").hide();
+              },2000)
+            });
+
+        }
+
+        /*$("#savePath").click(function(e){
+            savePoints(e.latlng);
+        });*/
+
+        $(".point-click").click(function(e){
+            var target = $(e.currentTarget);
+
+            try{
+              var lat = deviceData[deviceData.length-1].lat
+              var lon = deviceData[deviceData.length-1].lon
+              map.setView(new L.LatLng(lat, lon), 16);
+            } catch(e){
+
+            }
+
+        });
+
+        $("#clearPath").click(function(e){
+          $.ajax({
+              url: imei+"/remove-path",
+              type: 'DELETE',
+              success: function(result) {
+                $("#remove-alert").show();
+                setTimeout(function(){
+                  $("#remove-alert").hide();
+                  location.reload();
+                },2000)
+              }
+          });
+
+        });
+
+
+        </script>
+    </body>
+</html>

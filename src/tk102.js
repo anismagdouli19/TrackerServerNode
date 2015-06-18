@@ -246,11 +246,12 @@ tk102.parse = function( raw ) {
 tk102.fixGeo = function( one, two ) {
   //console.log(one+" "+two);
   var minutes = one.substr(-2);
-  var degrees = parseInt( one.replace( minutes, '' ), 10 );
-  var seconds = two.substr(0,2);
+  var degrees = parseInt(one.replace( minutes, '' ), 10);
+  minutes = parseFloat(minutes + "." + two);
+/*  var seconds = two.substr(0,2);
   var secDecimal = two.substr(2,two.length);
-  seconds = parseFloat(seconds+"."+secDecimal);
-  var res = degrees + (minutes / 60) + (seconds/3600);
+  seconds = parseFloat(seconds+"."+secDecimal);*/
+  var res = degrees + (minutes / 60) ;
   //console.log(res);
   return res;
 

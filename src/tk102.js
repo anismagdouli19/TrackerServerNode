@@ -27,6 +27,10 @@ tk102.settings = {
 var specs = [
 
   //(027042699595BR00150202A6629.0587N02543.2464E000.41537260.000000000000L00000000)(027042699595BP00000027042699595HSO)
+  //15/08/09 11:46:45:
+  //(027042699595BR00150809A6637.3695N02539.1432E001.1081624215.7900000000L00000000)
+  //(027042699595BP00000027042699595HSO)
+  //(027042699595BR00150809A6637.3671N02539.1402E004.0081628210.4800000000L00000000)
   function(raw) {
     var result = null
     try {
@@ -36,6 +40,7 @@ var specs = [
 
         imei = str.match(/\(([0-9]*)BR/)[1];
         date = str.match(/BR([0-9]{8})[A|V]/)[1];
+        time = str.match(/\E[0-9]{3,4}\..([0-9]{6})/)[1];
         gpsData = str.match(/BR[0-9]{8}(A|V)/)[1];
         lat = str.match(/[A|V]([0-9]{4,5})\.([0-9]{4})N/);
         latDegMin = lat[1];
@@ -43,18 +48,18 @@ var specs = [
         lon = str.match(/N([0-9]{4,5})\.([0-9]{4})E/);
         lonDegMin = lon[1];
         lonSec = lon[2];
-        speed = str.match(/E([0-9]{3}\.[0-9]{4})./);
+        speed = str.match(/E([0-9]{3}\.[0-9]{1})./);
         speed = parseFloat(speed[1]);
-
-      //  console.log(date+" "+gpsData );
-      //  console.log(lat+" "+lon+" "+speed );
+        var gpstime = time.replace( /([0-9]{2})([0-9]{2})([0-9]{2})/, function( match, hour, minute, second ) {
+          return hour +':'+ minute +':'+ second
+        })
         result = {
           'raw': raw,
           'datetime': new Date().toISOString(),
         //  'phone': str[1],
           'gps': {
             'date': date,
-            //'time': gpstime,
+            'time': gpstime,
             //'signal': str[15] == 'F' ? 'full' : 'low',
             'fix': gpsData == 'A' ? 'active' : 'invalid'
           },
@@ -72,7 +77,8 @@ var specs = [
           'imei': imei.trim()
         }
     } catch(e) {
-      console.log(e);
+      console.log("error " +e);
+      return null;
     }
     return result
   }
@@ -174,7 +180,7 @@ tk102.createServer = function( vars ) {
 
     // receiving data
     socket.on( 'data', function( chunk ) {
-      //console.log("dataReceive");
+      //console.log(chunk);
       tk102.emit( 'data', chunk )
       data += chunk
     })
@@ -185,8 +191,8 @@ tk102.createServer = function( vars ) {
       //var d = new Date();
       //console.log(d.toLocaleString() +": "+ data);
 
-      var gps = {}
-      gps = tk102.parse( data )
+      var gps = null
+      //gps = tk102.parse( data )
       if( data != '' ) {
         var gps = tk102.parse( data )
         if( gps ) {
@@ -199,7 +205,7 @@ tk102.createServer = function( vars ) {
 
           tk102.emit( 'fail', err )
         }
-      }
+    }
 
     })
 
@@ -225,20 +231,22 @@ tk102.createServer = function( vars ) {
 
     err.reason = err.message
     err.input = tk102.settings
-
     tk102.emit( 'error', err )
   })
 }
 
 // Parse GPRMC string
 tk102.parse = function( raw ) {
-  var data = null
-  var i = 0
-  while( data === null && i < specs.length ) {
-    data = specs[i]( raw )
-    i++
+  var data = [];
+  var rawSplit = raw.split(')');
+  for(var i = 0, len = rawSplit.length; i<len; i++){
+    d = specs[0]( rawSplit[i] );
+    if(d != null){
+        data.push(d);
+    }
+    i++;
   }
-  return data
+  return data;
 }
 
 

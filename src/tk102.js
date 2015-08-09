@@ -181,9 +181,9 @@ tk102.createServer = function( vars ) {
 
     // complete
     socket.on( 'close', function() {
-      console.log("closeConn: ");
-      var d = new Date();
-      console.log(d.toLocaleString() +": "+ data);
+      //console.log("closeConn: ");
+      //var d = new Date();
+      //console.log(d.toLocaleString() +": "+ data);
 
       var gps = {}
       gps = tk102.parse( data )

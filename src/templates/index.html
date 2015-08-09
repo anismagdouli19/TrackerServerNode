@@ -10,7 +10,7 @@
         <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
         <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/json2/20140204/json2.min.js"></script>
-        <script src="/Leaflet.ContinuousZoom.js"></script>
+        <!--<script src="/Leaflet.ContinuousZoom.js"></script>-->
         <style>
           html, body, {
           }
@@ -85,14 +85,14 @@
 
         imei = $("input#imei").val();
         var map = new L.Map('map', {
-          minZoom: 14,
-          zooms:[14,15,16,17,18]
+          //minZoom: 14,
+          //zooms:[14,15,16,17,18]
         });
 
         var peruskartta = new L.TileLayer('http://{s}.kartat.kapsi.fi/peruskartta/{z}/{x}/{y}.png', {
           attribution: 'Kartta: Maanmittauslaitos',
-          nativeZooms: [15,16,17],
-          minZoom: 14,
+          //nativeZooms: [15,16,17],
+          //minZoom: 14,
           subdomains: ['tile1', 'tile2']
         });
         L.control.scale().addTo(map);
@@ -114,10 +114,11 @@
        //drawPoints();
 
         map.on('click', function(e) {
-            savePoints(e.latlng, function(){
+          drawMarkers();
+            /*savePoints(e.latlng, function(){
               polyline.addLatLng( e.latlng );
               deviceData.push(e.latlng);
-            });
+            });*/
         });
 
         function drawPoints(){
@@ -130,6 +131,15 @@
             $("#point_"+i).data("lat",deviceData[i].lat );
             $("#point_"+i).data("lon",deviceData[i].lon );
           }
+        }
+
+        function drawMarkers(){
+           for(var i=0, len = deviceData.length; i<len;i++){
+              var marker = L.marker([deviceData[i].lat, deviceData[i].lon], {})
+                  .bindPopup('<div>'+deviceData[i].created+'</div>')
+                  .addTo(map);
+          }
+          
         }
 
         function clearPoints(){

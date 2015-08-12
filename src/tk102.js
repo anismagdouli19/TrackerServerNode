@@ -34,10 +34,8 @@ var specs = [
   function(raw) {
     var result = null
     try {
-
-      var raw = raw.trim()
-      var str = raw;
-
+        var raw = raw.trim()
+        var str = raw;
         imei = str.match(/\(([0-9]*)BR/)[1];
         date = str.match(/BR([0-9]{8})[A|V]/)[1];
         time = str.match(/\E[0-9]{3,4}\..([0-9]{6})/)[1];
@@ -50,15 +48,18 @@ var specs = [
         lonSec = lon[2];
         speed = str.match(/E([0-9]{3}\.[0-9]{1})./);
         speed = parseFloat(speed[1]);
+        var gpsdate = date.replace( /[0-9]{2}([0-9]{2})([0-9]{2})([0-9]{2})/, function( match, year, month, day ) {
+          return day +'.'+ month +'.'+ year
+        });
         var gpstime = time.replace( /([0-9]{2})([0-9]{2})([0-9]{2})/, function( match, hour, minute, second ) {
           return hour +':'+ minute +':'+ second
-        })
+        });
         result = {
           'raw': raw,
           'datetime': new Date().toISOString(),
         //  'phone': str[1],
           'gps': {
-            'date': date,
+            'date': gpsdate,
             'time': gpstime,
             //'signal': str[15] == 'F' ? 'full' : 'low',
             'fix': gpsData == 'A' ? 'active' : 'invalid'
@@ -77,7 +78,7 @@ var specs = [
           'imei': imei.trim()
         }
     } catch(e) {
-      console.log("error " +e);
+      console.log("cannot parse data: "+raw+" / " +e);
       return null;
     }
     return result
@@ -180,7 +181,25 @@ tk102.createServer = function( vars ) {
 
     // receiving data
     socket.on( 'data', function( chunk ) {
-      //console.log(chunk);
+      console.log("chunk: "+chunk);
+
+      var gps = null
+      //gps = tk102.parse( data )
+      if( chunk != '' ) {
+        var gps = tk102.parse( chunk )
+            if( gps ) {
+              tk102.emit( 'track', gps )
+            } else {
+              var err = new Error('Cannot parse GPS data from device')
+              err.reason = err.message
+              err.socket = socket
+              err.input = chunk
+
+              tk102.emit( 'ChunkFail', err )
+            }
+        }
+
+
       tk102.emit( 'data', chunk )
       data += chunk
     })
@@ -191,21 +210,7 @@ tk102.createServer = function( vars ) {
       //var d = new Date();
       //console.log(d.toLocaleString() +": "+ data);
 
-      var gps = null
-      //gps = tk102.parse( data )
-      if( data != '' ) {
-        var gps = tk102.parse( data )
-        if( gps ) {
-          tk102.emit( 'track', gps )
-        } else {
-          var err = new Error('Cannot parse GPS data from device')
-          err.reason = err.message
-          err.socket = socket
-          err.input = data
 
-          tk102.emit( 'fail', err )
-        }
-    }
 
     })
 
@@ -240,10 +245,12 @@ tk102.parse = function( raw ) {
   var data = [];
   var rawSplit = raw.split(')');
   for(var i = 0, len = rawSplit.length; i<len; i++){
-    d = specs[0]( rawSplit[i] );
-    if(d != null){
-        data.push(d);
-    }
+        if(rawSplit[i] != ""){
+            d = specs[0]( rawSplit[i] );
+            if(d != null){
+                data.push(d);
+            }
+        }
     i++;
   }
   return data;

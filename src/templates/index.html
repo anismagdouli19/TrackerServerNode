@@ -114,11 +114,11 @@
        //drawPoints();
 
         map.on('click', function(e) {
-          drawMarkers();
-            /*savePoints(e.latlng, function(){
+          //drawMarkers();
+            savePoints(e.latlng, function(){
               polyline.addLatLng( e.latlng );
               deviceData.push(e.latlng);
-            });*/
+            });
         });
 
         function drawPoints(){

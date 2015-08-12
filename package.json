@@ -6,6 +6,8 @@
   "dependencies": {
     "express": "3.1.0",
     "consolidate":"0.8.0",
-    "swig":"0.13.5"
+    "swig":"0.13.5",
+    "mocha":"",
+    "chai":""
   }
 }
